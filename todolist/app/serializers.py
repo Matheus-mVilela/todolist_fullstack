@@ -9,27 +9,22 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         fields = ["id", "username", "password"]
 
 
-class ListTaskDetailSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.ListTaskModel
-        fields = [
-            "id",
-            "user_id",
-            "title",
-            "start_date",
-            "end_date",
-            "description",
-            "status",
-        ]
-
-
-class ListTaskCreateSerializer(serializers.Serializer):
+class ListTaskDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField()
+    user_identification = serializers.IntegerField()
     title = serializers.CharField()
     start_date = serializers.DateTimeField()
     end_date = serializers.DateTimeField()
     description = serializers.CharField()
-    status = serializers.BooleanField()
+    status = serializers.CharField()
+
+
+class ListTaskCreateSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
+    description = serializers.CharField()
+    status = serializers.CharField()
 
 
 class TaskSerializer(serializers.ModelSerializer):
