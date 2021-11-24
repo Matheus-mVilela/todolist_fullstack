@@ -14,6 +14,10 @@ class ListTaskModel(models.Model):
         max_length=11, choices=choices.LIST_CHOICES, default=choices.START
     )
 
+    @property
+    def user_identification(self):
+        return self.user_id.id
+
     def __srt__(self):
         return self.id, self.title
 
