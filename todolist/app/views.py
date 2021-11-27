@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from app import models, serializers, services
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, views, permissions, response, status
 import pendulum
 
@@ -16,14 +15,12 @@ class ListTaskViewSet(views.APIView):
 
     def get(self, request, list_task_pk=None):
         if list_task_pk:
-            return self._detail(list_task_pk=list_task_pk, user_id=request.user.pk)
+            return self._detail(list_task=list_task_pk, user=request.user.pk)
 
-        return self._list(user_id=request.user.pk)
+        return self._list(user=request.user.pk)
 
-    def _detail(self, list_task_pk, user_id):
-        list_of_task = services.get_list_task_by_pk_and_user_id(
-            list_task_pk=list_task_pk, user_id=user_id
-        )
+    def _detail(self, list_task, user):
+        list_of_task = services.get_list_task_by_pk_and_user_id(list_task, user)
         if not list_of_task:
             return response.Response(
                 {"error": "List of task not found."},
@@ -33,8 +30,8 @@ class ListTaskViewSet(views.APIView):
 
         return response.Response(serializer.data, status=status.HTTP_200_OK)
 
-    def _list(self, user_id):
-        lists_of_tasks = services.filter_lists_of_tasks_by_user_id(user_id=user_id)
+    def _list(self, user):
+        lists_of_tasks = services.filter_lists_of_tasks_by_user_id(user)
         serializer = serializers.ListTaskDetailSerializer(lists_of_tasks, many=True)
 
         return response.Response(serializer.data, status=status.HTTP_200_OK)
@@ -47,28 +44,36 @@ class ListTaskViewSet(views.APIView):
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        _now = pendulum.now().strftime("%Y-%m-%dT%H:%M:%S")
-        _user_id = request.user
-        _title = serializer.data["title"]
-        _start_date = serializer.data["start_date"]
-        _end_date = serializer.data["end_date"]
-        _description = serializer.data["description"]
-        _status = serializer.data["status"]
+        now = pendulum.now().strftime("%Y-%m-%dT%H:%M:%S")
+        user = request.user
+        title = serializer.data["title"]
+        start_date = serializer.data["start_date"]
+        end_date = serializer.data["end_date"]
+        description = serializer.data["description"]
+        c_status = serializer.data["status"]
 
-        if _start_date < _now:
+        if start_date < now:
             return response.Response(
                 {"error": "Start date less than now!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if _start_date >= _end_date:
+        if start_date >= end_date:
             return response.Response(
                 {"error": "End date less than or equal to startdate!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        list_task = services.chek_equal_list_task(user, title, description)
+
+        if not list_task:
+            return response.Response(
+                {"error": "Task duplicate, title or description equal a task exist!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         list_of_task = services.create_list_of_task(
-            _user_id, _title, _start_date, _end_date, _description, _status
+            user, title, start_date, end_date, description, c_status
         )
 
         if not list_of_task:
@@ -89,34 +94,42 @@ class ListTaskViewSet(views.APIView):
             )
 
         list_of_task = services.get_list_task_by_pk_and_user_id(
-            list_task_pk=list_task_pk, user_id=request.user
+            list_task_pk, user=request.user
         )
         if not list_of_task:
             return response.Response(
                 {"error": "List of task not found!"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        _now = pendulum.now().strftime("%Y-%m-%dT%H:%M:%S")
-        _title = serializer.data["title"]
-        _start_date = serializer.data["start_date"]
-        _end_date = serializer.data["end_date"]
-        _description = serializer.data["description"]
-        _status = serializer.data["status"]
+        now = pendulum.now().strftime("%Y-%m-%dT%H:%M:%S")
+        title = serializer.data["title"]
+        start_date = serializer.data["start_date"]
+        end_date = serializer.data["end_date"]
+        description = serializer.data["description"]
+        c_status = serializer.data["status"]
 
-        if _start_date < _now:
+        if start_date < now:
             return response.Response(
                 {"error": "Start date less than now!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if _start_date >= _end_date:
+        if start_date >= end_date:
             return response.Response(
                 {"error": "End date less than or equal to startdate!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        list_task = services.chek_equal_list_task(request.user, title, description)
+
+        if not list_task:
+            return response.Response(
+                {"error": "Task duplicate, title or description equal a task exist!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         update_list_of_task = services.update_list_of_task(
-            list_of_task, _title, _start_date, _end_date, _description, _status
+            list_of_task, title, start_date, end_date, description, c_status
         )
 
         if not update_list_of_task:
@@ -130,7 +143,7 @@ class ListTaskViewSet(views.APIView):
 
     def delete(self, request, list_task_pk):
         list_of_task = services.get_list_task_by_pk_and_user_id(
-            list_task_pk=list_task_pk, user_id=request.user
+            list_task_pk, user=request.user
         )
         if not list_of_task:
             return response.Response(
@@ -144,9 +157,149 @@ class ListTaskViewSet(views.APIView):
         )
 
 
-class TaskViewSet(viewsets.ModelViewSet):
-    queryset = models.TaskModel.objects.all()
-    serializer_class = serializers.TaskSerializer
+class TaskViewSet(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["list_task_id"]
+
+    def get(self, request, task_pk=None):
+        if task_pk:
+            return self._detail(task_pk=task_pk, user=request.user.pk)
+
+        return self._list(user=request.user.pk)
+
+    def _detail(self, task_pk, user):
+        task = services.get_task_by_pk_and_user_id(task_pk, user)
+
+        if not task:
+            return response.Response(
+                {"error": "Task not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = serializers.TaskDetailSerializer(task)
+
+        return response.Response(serializer.data, status=status.HTTP_200_OK)
+
+    def _list(self, user):
+
+        tasks = services.filter_tasks_by_user_id(user)
+        serializer = serializers.TaskDetailSerializer(tasks, many=True)
+
+        return response.Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = serializers.TaskCreatelSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return response.Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        now = pendulum.now().strftime("%Y-%m-%dT%H:%M:%S")
+        user = request.user
+        list_identification = serializer["list_identification"].value
+        title = serializer.data["title"]
+        start_date = serializer.data["start_date"]
+        end_date = serializer.data["end_date"]
+        description = serializer.data["description"]
+        c_status = serializer.data["status"]
+
+        list_identification = services.check_list_of_task(list_identification, user)
+
+        if start_date < now:
+            return response.Response(
+                {"error": "Start date less than now!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if start_date >= end_date:
+            return response.Response(
+                {"error": "End date less than or equal to startdate!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        task = services.chek_equal_task(list_identification, title, description)
+
+        if not task:
+            return response.Response(
+                {"error": "Task duplicate, title or description equal a task exist!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        task = services.create_task(
+            user,
+            list_identification,
+            title,
+            start_date,
+            end_date,
+            description,
+            c_status,
+        )
+
+        if not task:
+            return response.Response(
+                {"error": "Error at created!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = serializers.TaskDetailSerializer(task)
+        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def patch(self, request, task_pk):
+        serializer = serializers.TaskUpdatelSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return response.Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+        task = services.get_task_by_pk_and_user_id(task_pk, user=request.user)
+
+        if not task:
+            return response.Response(
+                {"error": "Task not found!"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        now = pendulum.now().strftime("%Y-%m-%dT%H:%M:%S")
+        title = serializer.data["title"]
+        start_date = serializer.data["start_date"]
+        end_date = serializer.data["end_date"]
+        description = serializer.data["description"]
+        c_status = serializer.data["status"]
+
+        if start_date < now:
+            return response.Response(
+                {"error": "Start date less than now!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if start_date >= end_date:
+            return response.Response(
+                {"error": "End date less than or equal to startdate!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        update_task = services.update_task(
+            task, title, start_date, end_date, description, c_status
+        )
+
+        if not update_task:
+            return response.Response(
+                {"error": "Error at update!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = serializers.TaskDetailSerializer(update_task)
+        return response.Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, task_pk):
+        task = services.get_task_by_pk_and_user_id(task_pk, user=request.user)
+
+        if not task:
+            return response.Response(
+                {"error": "Task not found!"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        task.delete()
+
+        return response.Response(
+            {"messege": "Sucess, deleted!"}, status=status.HTTP_204_NO_CONTENT
+        )

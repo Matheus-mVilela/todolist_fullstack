@@ -5,7 +5,7 @@ from app import choices
 
 
 class ListTaskModel(models.Model):
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length=255)
     start_date = models.DateTimeField(blank=True)
     end_date = models.DateTimeField(blank=True)
@@ -16,7 +16,7 @@ class ListTaskModel(models.Model):
 
     @property
     def user_identification(self):
-        return self.user_id.id
+        return self.user.id
 
     def __srt__(self):
         return self.id, self.title
@@ -30,9 +30,12 @@ class TaskModel(models.Model):
     status = models.CharField(
         max_length=11, choices=choices.TASK_CHOICES, default=choices.TO_DO
     )
-    list_task_id = models.ForeignKey(
-        ListTaskModel, on_delete=models.CASCADE, blank=False
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    list_task = models.ForeignKey(ListTaskModel, on_delete=models.CASCADE, blank=False)
+
+    @property
+    def list_identification(self):
+        return self.list_task.id
 
     def __srt__(self):
         return self.id, self.title

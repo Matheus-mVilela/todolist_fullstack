@@ -27,14 +27,28 @@ class ListTaskCreateSerializer(serializers.Serializer):
     status = serializers.CharField()
 
 
-class TaskSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.TaskModel
-        fields = [
-            "title",
-            "start_date",
-            "end_date",
-            "description",
-            "status",
-            "list_task_id",
-        ]
+class TaskDetailSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    list_identification = serializers.IntegerField()
+    title = serializers.CharField()
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
+    description = serializers.CharField()
+    status = serializers.CharField()
+
+
+class TaskCreatelSerializer(serializers.Serializer):
+    list_identification = serializers.IntegerField()
+    title = serializers.CharField()
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
+    description = serializers.CharField()
+    status = serializers.CharField()
+
+
+class TaskUpdatelSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
+    description = serializers.CharField()
+    status = serializers.CharField()
