@@ -9,7 +9,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         fields = ["id", "username", "password"]
 
 
-class ListTaskDetailSerializer(serializers.Serializer):
+class ListOfTaskDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     user_identification = serializers.IntegerField()
     title = serializers.CharField()
@@ -18,8 +18,26 @@ class ListTaskDetailSerializer(serializers.Serializer):
     description = serializers.CharField()
     status = serializers.CharField()
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
 
-class ListTaskCreateSerializer(serializers.Serializer):
+        representation["tasks"] = TaskDetailSerializer(
+            instance.task_set.all(), many=True
+        ).data
+
+        return representation
+
+
+class TaskSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    start_date = serializers.DateTimeField()
+    end_date = serializers.DateTimeField()
+    description = serializers.CharField()
+    status = serializers.CharField()
+
+
+class ListOfTaskCreateSerializer(serializers.Serializer):
     title = serializers.CharField()
     start_date = serializers.DateTimeField()
     end_date = serializers.DateTimeField()

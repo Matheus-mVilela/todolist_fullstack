@@ -1,5 +1,5 @@
-from django.contrib.auth.models import User
-from app import models, serializers, services
+from django.contrib.auth.models import Permission, User
+from app import serializers, services
 from rest_framework import viewsets, views, permissions, response, status
 import pendulum
 
@@ -10,7 +10,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 
-class ListTaskViewSet(views.APIView):
+class ListOfTaskViewSet(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, list_task_pk=None):
@@ -26,18 +26,19 @@ class ListTaskViewSet(views.APIView):
                 {"error": "List of task not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        serializer = serializers.ListTaskDetailSerializer(list_of_task)
+
+        serializer = serializers.ListOfTaskDetailSerializer(list_of_task)
 
         return response.Response(serializer.data, status=status.HTTP_200_OK)
 
     def _list(self, user):
         lists_of_tasks = services.filter_lists_of_tasks_by_user_id(user)
-        serializer = serializers.ListTaskDetailSerializer(lists_of_tasks, many=True)
+        serializer = serializers.ListOfTaskDetailSerializer(lists_of_tasks, many=True)
 
         return response.Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = serializers.ListTaskCreateSerializer(data=request.data)
+        serializer = serializers.ListOfTaskCreateSerializer(data=request.data)
 
         if not serializer.is_valid():
             return response.Response(
@@ -82,11 +83,11 @@ class ListTaskViewSet(views.APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = serializers.ListTaskDetailSerializer(list_of_task)
+        serializer = serializers.ListOfTaskDetailSerializer(list_of_task)
         return response.Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def patch(self, request, list_task_pk):
-        serializer = serializers.ListTaskCreateSerializer(data=request.data)
+        serializer = serializers.ListOfTaskCreateSerializer(data=request.data)
 
         if not serializer.is_valid():
             return response.Response(
@@ -138,7 +139,7 @@ class ListTaskViewSet(views.APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = serializers.ListTaskDetailSerializer(update_list_of_task)
+        serializer = serializers.ListOfTaskDetailSerializer(update_list_of_task)
         return response.Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, list_task_pk):
@@ -233,7 +234,6 @@ class TaskViewSet(views.APIView):
             description,
             c_status,
         )
-
         if not task:
             return response.Response(
                 {"error": "Error at created!"},

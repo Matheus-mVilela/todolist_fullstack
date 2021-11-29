@@ -4,7 +4,7 @@ from django.db.models.deletion import CASCADE
 from app import choices
 
 
-class ListTaskModel(models.Model):
+class ListOfTask(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length=255)
     start_date = models.DateTimeField(blank=True)
@@ -22,7 +22,7 @@ class ListTaskModel(models.Model):
         return self.id, self.title
 
 
-class TaskModel(models.Model):
+class Task(models.Model):
     title = models.CharField(max_length=255)
     start_date = models.DateTimeField(blank=True)
     end_date = models.DateTimeField(blank=True)
@@ -31,7 +31,7 @@ class TaskModel(models.Model):
         max_length=11, choices=choices.TASK_CHOICES, default=choices.TO_DO
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    list_task = models.ForeignKey(ListTaskModel, on_delete=models.CASCADE, blank=False)
+    list_task = models.ForeignKey(ListOfTask, on_delete=models.CASCADE, blank=False)
 
     @property
     def list_identification(self):
