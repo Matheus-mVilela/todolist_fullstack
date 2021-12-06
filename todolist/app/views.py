@@ -1,4 +1,4 @@
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import User
 from app import serializers, services
 from rest_framework import viewsets, views, permissions, response, status
 import pendulum
@@ -39,7 +39,6 @@ class ListOfTaskViewSet(views.APIView):
 
     def post(self, request):
         serializer = serializers.ListOfTaskCreateSerializer(data=request.data)
-
         if not serializer.is_valid():
             return response.Response(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
@@ -69,7 +68,9 @@ class ListOfTaskViewSet(views.APIView):
 
         if not list_task:
             return response.Response(
-                {"error": "Task duplicate, title or description equal a task exist!"},
+                {
+                    "error": "List of Task duplicate, title or description equal a list of task exist!"
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -125,7 +126,9 @@ class ListOfTaskViewSet(views.APIView):
 
         if not list_task:
             return response.Response(
-                {"error": "Task duplicate, title or description equal a task exist!"},
+                {
+                    "error": "List of Task duplicate, title or description equal a list of task exist!"
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -275,11 +278,17 @@ class TaskViewSet(views.APIView):
                 {"error": "End date less than or equal to startdate!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        task_check = services.chek_equal_task(task.list_task, title, description)
+
+        if not task_check:
+            return response.Response(
+                {"error": "Task duplicate, title or description equal a task exist!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         update_task = services.update_task(
             task, title, start_date, end_date, description, c_status
         )
-
         if not update_task:
             return response.Response(
                 {"error": "Error at update!"},

@@ -41,12 +41,11 @@ start:
 stop: ## Stop container
 	@docker-compose stop || true
 
-delete-container: down
+delete-container: 
 	@docker-compose down || true
 
 remove: delete-container ## Delete containers and images
 
 
-	
 
 .DEFAULT_GOAL := help
