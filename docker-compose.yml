@@ -6,29 +6,23 @@ services:
         restart: ${RESTART:-no}
         environment:
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123change}
-        volumes: 
+        volumes:
             - ./env/db:/var/lib/postgresql/data
-        networks: 
+        networks:
             - app-newtwork
 
     app:
         build: todolist
-        restart: ${RESTART:-no}
-        depends_on: 
+        depends_on:
             - db
-        links: 
-            - db:db_postgres
-        volumes: 
+        volumes:
             - ./:/app
         working_dir: /app/todolist
-        ports: 
-            - "${BACKEND_HOST_PORT}8000"
-        stdin_open: true
-        tty: true
+        ports:
+            - "8000:8000"
+        command: bash -c "python manage.py runserver 0.0.0.0:8000"
         networks:
             - app-newtwork
-    
-        command: ${RUNSERVER:-/bin/bash} 
 
 networks:
     app-newtwork:
