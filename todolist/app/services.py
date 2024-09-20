@@ -15,7 +15,7 @@ def get_list_task_by_pk_and_user_id(list_task, user):
 
 def filter_lists_of_tasks_by_user_id(user):
     try:
-        lists_of_tasks = models.ListOfTask.objects.filter(user=user).order_by("-id")
+        lists_of_tasks = models.ListOfTask.objects.filter(user=user).order_by("id")
 
     except Exception:
         return None
